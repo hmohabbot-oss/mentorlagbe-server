@@ -4,6 +4,7 @@ import cors from 'cors';
 import { toNodeHandler } from 'better-auth/node';
 import { connectDB } from './config/db.js';
 import { auth } from './lib/auth.js';
+import jwtRoutes from './routes/jwt.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -22,6 +23,9 @@ app.all('/api/auth/*splat', toNodeHandler(auth));
 
 // Stripe webhook পরবর্তীতে express.json()-এর আগে যুক্ত করা হবে
 app.use(express.json());
+
+// API Routes
+app.use('/api/jwt', jwtRoutes);
 
 app.get('/', (_req: Request, res: Response) => {
   res.json({

@@ -16,6 +16,8 @@ import paymentsRoutes, {
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+await connectDB();
+
 app.use(
   cors({
     origin: [process.env.CLIENT_URL || 'http://localhost:3000'],
@@ -50,18 +52,10 @@ app.get('/', (_req: Request, res: Response) => {
   });
 });
 
-async function startServer() {
-  try {
-    await connectDB();
-    app.listen(PORT, () => {
-      console.log(`Server is running on http://localhost:${PORT}`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+  });
 }
-
-startServer();
 
 export default app;

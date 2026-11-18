@@ -4,6 +4,7 @@ import { admin } from 'better-auth/plugins';
 import { connectDB } from '../config/db.js';
 
 const db = await connectDB();
+const isProd = process.env.NODE_ENV === 'production';
 
 export const auth = betterAuth({
   database: mongodbAdapter(db),
@@ -47,7 +48,6 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
-          // পাবলিক সাইন-আপে কেউ যেন admin রোল বা pro প্ল্যান না নিতে পারে
           const allowedRole = user.role === 'tutor' ? 'tutor' : 'student';
           return {
             data: {
@@ -58,6 +58,12 @@ export const auth = betterAuth({
           };
         },
       },
+    },
+  },
+  advanced: {
+    defaultCookieAttributes: {
+      sameSite: isProd ? 'none' : 'lax',
+      secure: isProd,
     },
   },
   plugins: [admin()],

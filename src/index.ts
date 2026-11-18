@@ -7,6 +7,8 @@ import { auth } from './lib/auth.js';
 import jwtRoutes from './routes/jwt.routes.js';
 import tuitionsRoutes from './routes/tuitions.routes.js';
 import applicationsRoutes from './routes/applications.routes.js';
+import usersRoutes from './routes/users.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -30,6 +32,8 @@ app.use(express.json());
 app.use('/api/jwt', jwtRoutes);
 app.use('/api/tuitions', tuitionsRoutes);
 app.use('/api/applications', applicationsRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/', (_req: Request, res: Response) => {
   res.json({

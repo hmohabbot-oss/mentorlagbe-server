@@ -15,6 +15,7 @@ export interface UserDoc {
   phone?: string;
   bio?: string;
   plan: PlanType;
+  savedTuitions?: string[];
   createdAt: Date;
 }
 
@@ -27,6 +28,7 @@ export interface TuitionDoc {
   location: string;
   monthlyFee: number;
   daysPerWeek: number;
+  scheduleSlots?: string[];
   bannerImage: string;
   description: string;
   tutorName: string;

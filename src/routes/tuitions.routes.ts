@@ -74,6 +74,7 @@ router.get('/', async (req: Request, res: Response) => {
       filter.$or = [
         { title: { $regex: search, $options: 'i' } },
         { subject: { $regex: search, $options: 'i' } },
+        { tutorName: { $regex: search, $options: 'i' } },
       ];
     }
 
@@ -181,6 +182,7 @@ router.post(
         location,
         monthlyFee,
         daysPerWeek,
+        scheduleSlots,
         bannerImage,
         description,
       } = req.body;
@@ -203,7 +205,6 @@ router.post(
         return;
       }
 
-      // Free Plan-এ সর্বোচ্চ ২টি পোস্টের লিমিট যাচাই
       if (req.user!.plan === 'free') {
         const existingCount = await collections
           .tuitions()
@@ -219,6 +220,10 @@ router.post(
         }
       }
 
+      const cleanSlots = Array.isArray(scheduleSlots)
+        ? scheduleSlots.map((s) => String(s).trim()).filter(Boolean)
+        : ['Flexible / Discuss with Tutor'];
+
       const newTuition: TuitionDoc = {
         title: String(title).trim(),
         subject: String(subject).trim(),
@@ -227,6 +232,9 @@ router.post(
         location: String(location).trim(),
         monthlyFee: Number(monthlyFee),
         daysPerWeek: Number(daysPerWeek),
+        scheduleSlots: cleanSlots.length
+          ? cleanSlots
+          : ['Flexible / Discuss with Tutor'],
         bannerImage: String(bannerImage).trim(),
         description: String(description).trim(),
         tutorName: req.user!.name,
@@ -290,6 +298,7 @@ router.patch(
         location,
         monthlyFee,
         daysPerWeek,
+        scheduleSlots,
         bannerImage,
         description,
         isActive,
@@ -298,13 +307,24 @@ router.patch(
       const updateFields: Partial<TuitionDoc> = {};
       if (title !== undefined) updateFields.title = String(title).trim();
       if (subject !== undefined) updateFields.subject = String(subject).trim();
-      if (classLevel !== undefined) updateFields.classLevel = String(classLevel).trim();
+      if (classLevel !== undefined)
+        updateFields.classLevel = String(classLevel).trim();
       if (mode === 'Online' || mode === 'Offline') updateFields.mode = mode;
-      if (location !== undefined) updateFields.location = String(location).trim();
-      if (monthlyFee !== undefined) updateFields.monthlyFee = Number(monthlyFee);
-      if (daysPerWeek !== undefined) updateFields.daysPerWeek = Number(daysPerWeek);
-      if (bannerImage !== undefined) updateFields.bannerImage = String(bannerImage).trim();
-      if (description !== undefined) updateFields.description = String(description).trim();
+      if (location !== undefined)
+        updateFields.location = String(location).trim();
+      if (monthlyFee !== undefined)
+        updateFields.monthlyFee = Number(monthlyFee);
+      if (daysPerWeek !== undefined)
+        updateFields.daysPerWeek = Number(daysPerWeek);
+      if (Array.isArray(scheduleSlots)) {
+        updateFields.scheduleSlots = scheduleSlots
+          .map((s) => String(s).trim())
+          .filter(Boolean);
+      }
+      if (bannerImage !== undefined)
+        updateFields.bannerImage = String(bannerImage).trim();
+      if (description !== undefined)
+        updateFields.description = String(description).trim();
       if (typeof isActive === 'boolean') updateFields.isActive = isActive;
 
       await collections

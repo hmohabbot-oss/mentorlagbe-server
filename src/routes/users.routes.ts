@@ -1,4 +1,5 @@
 import { Router, Response } from 'express';
+import { ObjectId } from 'mongodb';
 import { collections } from '../config/db.js';
 import { AuthRequest, verifyToken } from '../middlewares/auth.middleware.js';
 
@@ -79,7 +80,94 @@ router.patch(
   }
 );
 
-// ৩. GET /api/users/dashboard-stats — রোল অনুযায়ী ড্যাশবোর্ড স্ট্যাটস কার্ড
+// ৩. GET /api/users/saved-tuitions — সেভ করা টিউশনগুলো দেখা
+router.get(
+  '/saved-tuitions',
+  verifyToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const user = await collections
+        .users()
+        .findOne({ email: req.user!.email });
+
+      const savedIds = (user?.savedTuitions || []).filter((id) =>
+        ObjectId.isValid(id)
+      );
+
+      if (savedIds.length === 0) {
+        res.json({ success: true, data: [] });
+        return;
+      }
+
+      const tuitions = await collections
+        .tuitions()
+        .find({
+          _id: { $in: savedIds.map((id) => new ObjectId(id)) },
+          approvalStatus: 'approved',
+          isActive: true,
+        })
+        .toArray();
+
+      res.json({ success: true, data: tuitions });
+    } catch (error) {
+      console.error('Error fetching saved tuitions:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch saved tuitions',
+      });
+    }
+  }
+);
+
+// ৪. POST /api/users/saved-tuitions/:tuitionId — টিউশন বুকমার্ক Toggle
+router.post(
+  '/saved-tuitions/:tuitionId',
+  verifyToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const tuitionId = req.params.tuitionId as string;
+      if (!ObjectId.isValid(tuitionId)) {
+        res.status(400).json({ success: false, message: 'Invalid tuition ID' });
+        return;
+      }
+
+      const user = await collections
+        .users()
+        .findOne({ email: req.user!.email });
+
+      const currentSaved = user?.savedTuitions || [];
+      const alreadySaved = currentSaved.includes(tuitionId);
+
+      const updatedSaved = alreadySaved
+        ? currentSaved.filter((id) => id !== tuitionId)
+        : [...currentSaved, tuitionId];
+
+      await collections
+        .users()
+        .updateOne(
+          { email: req.user!.email },
+          { $set: { savedTuitions: updatedSaved } }
+        );
+
+      res.json({
+        success: true,
+        saved: !alreadySaved,
+        savedTuitions: updatedSaved,
+        message: alreadySaved
+          ? 'Removed from Saved Tuitions'
+          : 'Added to Saved Tuitions',
+      });
+    } catch (error) {
+      console.error('Error toggling saved tuition:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update saved tuitions',
+      });
+    }
+  }
+);
+
+// ৫. GET /api/users/dashboard-stats — রোল অনুযায়ী ড্যাশবোর্ড স্ট্যাটস কার্ড
 router.get(
   '/dashboard-stats',
   verifyToken,

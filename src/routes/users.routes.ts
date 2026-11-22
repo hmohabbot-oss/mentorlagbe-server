@@ -119,7 +119,7 @@ router.get(
   }
 );
 
-// ৪. POST /api/users/saved-tuitions/:tuitionId — টিউশন বুকমার্ক Toggle
+// ৪. POST /api/users/saved-tuitions/:tuitionId — Free: সর্বোচ্চ ৫টি, Pro: আনলিমিটেড বুকমার্ক
 router.post(
   '/saved-tuitions/:tuitionId',
   verifyToken,
@@ -137,6 +137,20 @@ router.post(
 
       const currentSaved = user?.savedTuitions || [];
       const alreadySaved = currentSaved.includes(tuitionId);
+
+      // Free ইউজারের জন্য সর্বোচ্চ ৫টি বুকমার্ক লিমিট (Pro-দের জন্য আনলিমিটেড)
+      if (
+        !alreadySaved &&
+        req.user!.plan !== 'pro' &&
+        currentSaved.length >= 5
+      ) {
+        res.status(400).json({
+          success: false,
+          message:
+            'Free plan users can save up to 5 tuitions. Upgrade to Pro for unlimited bookmarks!',
+        });
+        return;
+      }
 
       const updatedSaved = alreadySaved
         ? currentSaved.filter((id) => id !== tuitionId)
